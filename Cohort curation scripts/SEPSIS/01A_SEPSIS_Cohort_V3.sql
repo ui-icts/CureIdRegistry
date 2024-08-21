@@ -17,8 +17,7 @@ Dependencies:
 None
 */
 
-USE YOUR_DATABASE;
-
+USE OMOP;
 -- Drop all tables
 DROP TABLE IF EXISTS [Results].[Sepsis_Cohort]; -- Change schema as appropriate
 DROP TABLE IF EXISTS #sepsis_diagnosis;
@@ -31,8 +30,8 @@ CREATE TABLE [Results].[Sepsis_Cohort] (
     [visit_occurrence_id] [int] NOT NULL,
     [visit_start_date] [date] NOT NULL,
     [visit_end_date] [date] NOT NULL,
-     NULL,
-     NULL
+    [birth_datetime] [datetime] NULL,
+    [death_datetime] [datetime] NULL
 ) ON [PRIMARY];
 
 -- First identify patients (inpatient and outpatient) with sepsis diagnosis
@@ -40,11 +39,11 @@ SELECT DISTINCT
     person_id,
     condition_start_date AS diagnosis_date
 INTO #sepsis_diagnosis
-FROM dbo.CONDITION_OCCURRENCE
+FROM omop_cdm.CONDITION_OCCURRENCE
 WHERE condition_concept_id IN (
     SELECT c.concept_id
-    FROM dbo.CONCEPT AS c
-    INNER JOIN dbo.CONCEPT_ANCESTOR AS ca ON c.concept_id = ca.descendant_concept_id
+    FROM omop_cdm.CONCEPT AS c
+    INNER JOIN omop_cdm.CONCEPT_ANCESTOR AS ca ON c.concept_id = ca.descendant_concept_id
     WHERE ca.ancestor_concept_id = 132797
     AND c.invalid_reason IS NULL
 )
@@ -63,7 +62,7 @@ SELECT
     v.visit_start_date,
     v.visit_end_date
 INTO #inpat
-FROM visit_occurrence AS v
+FROM omop_cdm.visit_occurrence AS v
 INNER JOIN #sepsis_diagnosis AS sd ON v.person_id = sd.person_id
 WHERE v.visit_concept_id IN (9201, 262) -- Inpatient visit/ED and inpatient visit
 AND v.visit_start_date >= '2020-01-01'
@@ -88,8 +87,8 @@ SELECT
     d.death_datetime
 INTO #Vis_Occ
 FROM #inpat AS i
-INNER JOIN person AS p ON i.person_id = p.person_id
-LEFT JOIN death AS d ON i.person_id = d.person_id;
+INNER JOIN omop_cdm.person AS p ON i.person_id = p.person_id
+LEFT JOIN omop_cdm.death AS d ON i.person_id = d.person_id;
 
 -- Inserts the cohort into the final table
 INSERT INTO [Results].[Sepsis_Cohort] -- Change schema if not using Results
