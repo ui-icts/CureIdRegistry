@@ -22,15 +22,17 @@ WITH condition_counts AS (
         COUNT(DISTINCT co.person_id) AS unique_person_count,
         COUNT(*) / COUNT(DISTINCT co.person_id) AS mean_conditions_per_patient
     FROM
-        YOUR_SCHEMA_NAME.condition_occurrence co
+        omop_cdm.condition_occurrence co
+	JOIN [Results].[Sepsis_Cohort] AS coh --joining to sepsis cohort
+		on co.person_id=coh.person_id
     LEFT JOIN
-        YOUR_SCHEMA_NAME.concept_ancestor ca
+       omop_cdm.concept_ancestor ca
         ON co.condition_concept_id = ca.descendant_concept_id
     LEFT JOIN
-        YOUR_SCHEMA_NAME.concept ac
+        omop_cdm.concept ac
         ON ca.ancestor_concept_id = ac.concept_id
     LEFT JOIN
-        YOUR_SCHEMA_NAME.concept sc
+        omop_cdm.concept sc
         ON co.condition_concept_id = sc.concept_id
     GROUP BY
         COALESCE(ca.ancestor_concept_id, co.condition_concept_id),
@@ -41,14 +43,14 @@ total_person_count AS (
     SELECT
         COUNT(DISTINCT person_id) AS total_persons
     FROM
-        YOUR_SCHEMA_NAME.condition_occurrence
+        [Results].[Sepsis_Cohort] --only looking at the total people from cohort
 )
 SELECT
     cc.concept_id,
     cc.concept_name,
     cc.condition_source_value,
     cc.unique_person_count,
-    ROUND((cc.unique_person_count / tpc.total_persons) * 100, 2) AS percent_of_persons,
+	CAST(cc.unique_person_count AS DECIMAL(18,2)) / CAST(tpc.total_persons AS DECIMAL(18, 2)) * 100 AS percent_of_persons,
     cc.mean_conditions_per_patient
 FROM
     condition_counts cc,

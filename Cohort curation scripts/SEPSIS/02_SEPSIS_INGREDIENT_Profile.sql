@@ -1,5 +1,6 @@
 -- This query retrieves the count of patients exposed to specific drug ingredients,
 -- aggregated by ingredient concept ID, ingredient name, drug source value, and route of administration.
+USE  OMOP;
 
 SELECT
     i.concept_id AS ingredient_concept_id,          -- Concept ID representing the drug ingredient
@@ -7,10 +8,10 @@ SELECT
     de.route_source_value AS route_source_value,    -- Source value representing the route of administration (e.g., oral, intravenous)
     de.drug_source_value AS drug_source_value,      -- Source value representing the specific drug as recorded in the database
     COUNT(DISTINCT de.person_id) AS patient_count   -- Count of unique patients exposed to this drug ingredient
-FROM YOUR_CDM.drug_exposure de                      -- Table containing drug exposure records
-JOIN vocab.concept_ancestor ca                      -- Table linking drug concepts to their ancestors (i.e., higher-level concepts like ingredients)
+FROM OMOP_CDM.drug_exposure de                      -- Table containing drug exposure records
+JOIN omop_cdm.concept_ancestor ca                      -- Table linking drug concepts to their ancestors (i.e., higher-level concepts like ingredients)
     ON ca.descendant_concept_id = de.drug_concept_id -- Join on drug concept ID from drug_exposure to find the ancestor concept
-JOIN vocab.concept i                                -- Table containing details of each concept (e.g., drugs, ingredients)
+JOIN omop_cdm.concept i                                -- Table containing details of each concept (e.g., drugs, ingredients)
     ON i.concept_id = ca.ancestor_concept_id         -- Join to get the ingredient concept details
     AND i.concept_class_id = 'Ingredient'            -- Filter to only include concepts classified as 'Ingredient'
 WHERE i.concept_id IN (                             -- Filter for specific ingredient concept IDs of interest

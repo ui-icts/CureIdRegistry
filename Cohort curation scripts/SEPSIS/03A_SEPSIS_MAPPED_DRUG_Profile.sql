@@ -14,15 +14,21 @@ Dependencies:
 
 -- Create table of all drugs given in the cohort
 --Replace "YOUR_CDM" with your schema name for the Sepsis cohort
+USE OMOP;
 
 DROP TABLE IF EXISTS #drug_concepts_of_interest;
 SELECT DISTINCT
     CONCEPT.concept_id,
     CONCEPT.concept_name
 INTO #drug_concepts_of_interest
-FROM [Results].[YOUR_CDM]
-LEFT JOIN CONCEPT
-    ON CONCEPT.concept_id = [Results].[YOUR_CDM].drug_concept_id;
+FROM [Results].[Sepsis_Cohort]
+join omop_cdm.DRUG_EXPOSURE on DRUG_EXPOSURE.person_id = [Results].[Sepsis_Cohort].person_id
+LEFT JOIN omop_cdm.CONCEPT
+    ON CONCEPT.concept_id = DRUG_EXPOSURE.drug_concept_id;
+
+select
+*
+from #drug_concepts_of_interest
 
 --Roll up drugs into ingredients
 DROP TABLE IF EXISTS #ingredients_of_interest;
@@ -34,10 +40,10 @@ SELECT
 INTO #ingredients_of_interest
 FROM #drug_concepts_of_interest AS dci
 LEFT JOIN
-    CONCEPT_ANCESTOR
+    OMOP_CDM.CONCEPT_ANCESTOR
     ON
         CONCEPT_ANCESTOR.descendant_concept_id = dci.concept_id
-LEFT JOIN CONCEPT
+LEFT JOIN omop_cdm.CONCEPT
     ON CONCEPT.concept_id = CONCEPT_ANCESTOR.ancestor_concept_id
 WHERE
     CONCEPT.concept_class_id = 'Ingredient'
@@ -50,9 +56,10 @@ SELECT
     d.drug_concept_id,
     d.person_id
 INTO #drug_exposure_by_ingredient
-FROM [Results].[YOUR_CDM] AS d
+FROM omop_cdm.DRUG_EXPOSURE AS d
 LEFT JOIN #ingredients_of_interest AS i
     ON i.drug_concept_id = d.drug_concept_id
+
 
 --Ingredient use by person
 DROP TABLE IF EXISTS #ingredient_use_by_person;
@@ -61,8 +68,8 @@ SELECT
     ingredient_concept_id,
     COUNT(person_id) AS person_count,
     (
-        100 * COUNT(person_id)
-        / (SELECT COUNT(DISTINCT person_id) FROM #drug_exposure_by_ingredient)
+        100 * CAST(COUNT(person_id) AS decimal(18,2))
+        / (SELECT CAST(COUNT(DISTINCT person_id) as decimal(18,2)) FROM #drug_exposure_by_ingredient)
     ) AS person_perc
 INTO #ingredient_use_by_person
 FROM

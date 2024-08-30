@@ -20,9 +20,9 @@ FROM (
         de.drug_source_value,
         COUNT(de.drug_source_value) AS unmapped_drug_count
     FROM
-        DRUG_EXPOSURE AS de
-    LEFT JOIN
-        [Results].[YOUR_SEPSIS_CDM_Visit_Occurrence] AS coh
+        omop_cdm.DRUG_EXPOSURE AS de
+    JOIN --Changed to inner join so were looking just at the sepsis cohort
+        [Results].[Sepsis_Cohort] AS coh
         ON
             de.person_id = coh.person_id
             AND de.drug_exposure_start_date >= coh.visit_start_date
