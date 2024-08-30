@@ -22,7 +22,7 @@ SELECT DISTINCT
     CONCEPT.concept_name
 INTO #drug_concepts_of_interest
 FROM [Results].[Sepsis_Cohort]
-join omop_cdm.DRUG_EXPOSURE on DRUG_EXPOSURE.person_id = [Results].[Sepsis_Cohort].person_id --only looking at sepsis cohort
+join omop_cdm.DRUG_EXPOSURE on DRUG_EXPOSURE.person_id = [Results].[Sepsis_Cohort].person_id --Looking at sepsis cohort
 LEFT JOIN omop_cdm.CONCEPT
     ON CONCEPT.concept_id = DRUG_EXPOSURE.drug_concept_id;
 
@@ -57,7 +57,7 @@ SELECT
     d.person_id
 INTO #drug_exposure_by_ingredient
 FROM omop_cdm.DRUG_EXPOSURE AS d
-JOIN [Results].[Sepsis_Cohort] coh on d.person_id=coh.person_id --only looking at sepsis cohort
+JOIN [Results].[Sepsis_Cohort] coh on d.person_id=coh.person_id --Looking at sepsis cohort
 LEFT JOIN #ingredients_of_interest AS i
     ON i.drug_concept_id = d.drug_concept_id
 
